@@ -149,7 +149,7 @@ namespace deepness
                     size_t num_children = popcnt(node->population);
                     auto newnode = std::make_shared<node_type>();
                     uint32_t partialbit = 1 << partial;
-                    newnode->population = node->population & partialbit;
+                    newnode->population = node->population | partialbit;
                     assert(num_children == popcnt(newnode->population) - 1);
                     newnode->children.reset(new shared_node_type[num_children + 1]);
                     uint32_t before_popcnt = popcnt(node->population & (partialbit - 1));
