@@ -2,7 +2,7 @@
 
 Note that this library is currently very early in development.
 
-This is an implementation of an immutable map in c++
+This is an implementation of an immutable map in c++.
 The underlying data-structure is a hash array mapped trie.
 
 The map currently only supports setting and getting data.
