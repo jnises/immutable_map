@@ -7,4 +7,4 @@ Tool('mingw')(env)
 env.Replace(CCFLAGS=['-std=c++11', '-g'])
 
 
-env.Program(target='test.exe', source='test.cpp')
+env.Program(target='test.exe', source='test.cpp', LINKFLAGS='-static')

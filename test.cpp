@@ -12,5 +12,19 @@ int main(int argc, char *argv[])
     auto intmap2 = intmap.set(0, 42);
     assert(intmap2[0] == 42);
 
-    std::cout << "test complete" << std::endl;;
+    auto intmap3 = intmap2.set(0, 1);
+    assert(intmap3[0] == 1);
+
+    auto intmap4 = intmap3;
+    for(size_t i = 0; i < 100000; ++i)
+    {
+        intmap4 = intmap4.set(i, i);
+    }
+
+    for(size_t i = 0; i < 100000; ++i)
+    {
+        assert(intmap4[i] == i);
+    }
+
+    std::cout << "tests complete" << std::endl;;
 }
