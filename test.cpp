@@ -16,13 +16,13 @@ int main(int argc, char *argv[])
     assert(intmap3[0] == 1);
 
     immutable_map<int, int> intmap4;
-    for(size_t i = 0; i < 1000; ++i)
+    for(size_t i = 0; i < 10000; ++i)
     {
         intmap4 = intmap4.set(i, i);
 		assert(intmap4[i] == i);
     }
 
-    for(size_t i = 0; i < 1000; ++i)
+    for(size_t i = 0; i < 10000; ++i)
     {
         assert(intmap4[i] == i);
     }

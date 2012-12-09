@@ -111,7 +111,6 @@ namespace deepness
                 uint32_t partial = hash & 0x1f;
                 if((node->population >> partial) & 1)
                 {
-                    uint32_t partialbit = 1 << partial;
                     return get(val, hash >> 5, node->get_child(partial));
                 }
                 else
@@ -140,9 +139,9 @@ namespace deepness
 
         static shared_node_type set(value_type val, uint32_t hash, int level, const shared_node_type &node)
         {
+            uint32_t partial = hash & 0x1f;
             if(node->population)
             {
-                uint32_t partial = hash & 0x1f;
                 if((node->population >> partial) & 1)
                 {
                     auto newnode = std::make_shared<node_type>(*node);                
@@ -198,15 +197,17 @@ namespace deepness
 						splitnode->population = 1 << shifted_partial;
 						splitnode->children.reset(new shared_node_type[1]);
 						splitnode->children[0] = std::make_shared<node_type>(*node);
-						return set(std::move(val), hash >> 5, level + 1, splitnode);
+						return set(std::move(val), hash, level, splitnode);
 					}
 				}
 				else
 				{
-#error what is level for the first leaf rootnode?
 					// this is the root node
                     auto newnode = std::make_shared<node_type>();
-                    newnode->values.push_back(std::make_shared<value_type>(std::move(val)));
+                    newnode->population = 1 << partial;
+                    newnode->children.reset(new shared_node_type[1]);
+                    newnode->children[0] = std::make_shared<node_type>();
+                    newnode->children[0]->values.push_back(std::make_shared<value_type>(std::move(val)));
                     return std::move(newnode);
 				}
             }
