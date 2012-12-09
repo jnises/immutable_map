@@ -71,11 +71,11 @@ namespace deepness
             std::vector<shared_value_type> values;
         };
 
-    public:        
+    public:
         immutable_map()
             :m_root(std::make_shared<node_type>())
         {}
-        
+
         /*!
           \returns a new immutable_map with val.first mapped to val.second
         */
@@ -144,12 +144,12 @@ namespace deepness
             {
                 if((node->population >> partial) & 1)
                 {
-                    auto newnode = std::make_shared<node_type>(*node);                
+                    auto newnode = std::make_shared<node_type>(*node);
                     newnode->get_child(partial) = set(std::move(val), hash >> 5, level + 1, node->get_child(partial));
                     return std::move(newnode);
                 }
                 else
-                { 
+                {
                     // no node with a matching key, create a new one
                     size_t num_children = popcnt(node->population);
                     auto newnode = std::make_shared<node_type>();
@@ -168,48 +168,48 @@ namespace deepness
             }
             else
             {
-				if(node->values.size())
-				{
-					for(size_t i = 0; i < node->values.size(); ++i)
-					{
-						if(key_equals()(node->values[i]->first, val.first))
-						{
-							// the key already exists in the map, replace it
-							auto newnode = std::make_shared<node_type>(*node);
-							newnode->values[i] = std::make_shared<value_type>(std::move(val));
-							return std::move(newnode);
-						}
-					}
+                if(node->values.size())
+                {
+                    for(size_t i = 0; i < node->values.size(); ++i)
+                    {
+                        if(key_equals()(node->values[i]->first, val.first))
+                        {
+                            // the key already exists in the map, replace it
+                            auto newnode = std::make_shared<node_type>(*node);
+                            newnode->values[i] = std::make_shared<value_type>(std::move(val));
+                            return std::move(newnode);
+                        }
+                    }
 
-					// the found leaf doesn't match the key
-					if(level > 6)
-					{
-						auto newnode = std::make_shared<node_type>(*node);
-						newnode->values.push_back(std::make_shared<value_type>(std::move(val)));
-						return std::move(newnode);
-					}
-					else
-					{
-						auto splitnode = std::make_shared<node_type>();
-						uint32_t oldhash = static_cast<uint32_t>(hasher()(node->values.front()->first));
-						uint32_t shifted_oldhash = oldhash >> (5 * level);
-						uint32_t shifted_partial = shifted_oldhash & 0x1f;
-						splitnode->population = 1 << shifted_partial;
-						splitnode->children.reset(new shared_node_type[1]);
-						splitnode->children[0] = std::make_shared<node_type>(*node);
-						return set(std::move(val), hash, level, splitnode);
-					}
-				}
-				else
-				{
-					// this is the root node
+                    // the found leaf doesn't match the key
+                    if(level > 6)
+                    {
+                        auto newnode = std::make_shared<node_type>(*node);
+                        newnode->values.push_back(std::make_shared<value_type>(std::move(val)));
+                        return std::move(newnode);
+                    }
+                    else
+                    {
+                        auto splitnode = std::make_shared<node_type>();
+                        uint32_t oldhash = static_cast<uint32_t>(hasher()(node->values.front()->first));
+                        uint32_t shifted_oldhash = oldhash >> (5 * level);
+                        uint32_t shifted_partial = shifted_oldhash & 0x1f;
+                        splitnode->population = 1 << shifted_partial;
+                        splitnode->children.reset(new shared_node_type[1]);
+                        splitnode->children[0] = std::make_shared<node_type>(*node);
+                        return set(std::move(val), hash, level, splitnode);
+                    }
+                }
+                else
+                {
+                    // this is the root node
                     auto newnode = std::make_shared<node_type>();
                     newnode->population = 1 << partial;
                     newnode->children.reset(new shared_node_type[1]);
                     newnode->children[0] = std::make_shared<node_type>();
                     newnode->children[0]->values.push_back(std::make_shared<value_type>(std::move(val)));
                     return std::move(newnode);
-				}
+                }
             }
         }
 
