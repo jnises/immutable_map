@@ -7,7 +7,10 @@ using namespace deepness;
 
 int main(int argc, char *argv[])
 {
+    std::cout << "immutable_map tests" << std::endl;
     immutable_map<int, int> intmap;
-    auto it = intmap.find(0);
-    assert(it == intmap.end());
+    auto intmap2 = intmap.set(0, 42);
+    assert(intmap2[0] == 42);
+
+    std::cout << "test complete" << std::endl;;
 }
