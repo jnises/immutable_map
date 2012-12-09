@@ -62,7 +62,7 @@ namespace deepness
 
             shared_node_type &get_child(size_t child)
             {
-                return children[popcnt(population & (child - 1))];
+                return children[popcnt(population & ((1 << child) - 1))];
             }
 
             // TODO this is just a naive implementation, redo it to optimize
@@ -203,6 +203,7 @@ namespace deepness
 				}
 				else
 				{
+#error what is level for the first leaf rootnode?
 					// this is the root node
                     auto newnode = std::make_shared<node_type>();
                     newnode->values.push_back(std::make_shared<value_type>(std::move(val)));
