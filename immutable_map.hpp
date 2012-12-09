@@ -60,6 +60,11 @@ namespace deepness
                 }
             }
 
+            shared_node_type &get_child(size_t child)
+            {
+                return children[popcnt(population & (child - 1))];
+            }
+
             // TODO this is just a naive implementation, redo it to optimize
             uint32_t population; //!< a 0 population indicates a leaf
             std::unique_ptr<shared_node_type[]> children;
@@ -106,7 +111,8 @@ namespace deepness
                 uint32_t partial = hash & 0x1f;
                 if((node->population >> partial) & 1)
                 {
-                    return get(val, hash >> 5, node->children[partial]);
+                    uint32_t partialbit = 1 << partial;
+                    return get(val, hash >> 5, node->get_child(partial));
                 }
                 else
                 {
@@ -140,7 +146,7 @@ namespace deepness
                 if((node->population >> partial) & 1)
                 {
                     auto newnode = std::make_shared<node_type>(*node);                
-                    newnode->children[partial] = set(std::move(val), hash >> 5, level + 1, node->children[partial]);
+                    newnode->get_child(partial) = set(std::move(val), hash >> 5, level + 1, node->get_child(partial));
                     return std::move(newnode);
                 }
                 else
@@ -155,8 +161,8 @@ namespace deepness
                     uint32_t before_popcnt = popcnt(node->population & (partialbit - 1));
                     uint32_t after_popcnt = popcnt(node->population & ~(partialbit | (partialbit - 1)));
                     std::copy(node->children.get(), node->children.get() + before_popcnt, newnode->children.get());
-                    newnode->children[partial] = std::make_shared<node_type>();
-                    newnode->children[partial]->values.push_back(std::make_shared<value_type>(std::move(val)));
+                    newnode->children[before_popcnt] = std::make_shared<node_type>();
+                    newnode->children[before_popcnt]->values.push_back(std::make_shared<value_type>(std::move(val)));
                     std::copy(node->children.get() + before_popcnt, node->children.get() + num_children, newnode->children.get() + before_popcnt + 1);
                     return std::move(newnode);
                 }
