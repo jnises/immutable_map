@@ -33,6 +33,21 @@
 
 namespace deepness
 {
+	class key_error: public std::exception
+	{
+	public:
+		key_error(std::string message = "")
+			:m_message(std::move(message))
+		{}
+
+		const char *what() const throw() override
+		{
+			return m_message.c_str();
+		}
+	private:
+		std::string m_message;
+	};
+
     template<class Key,
              class T,
              class Hash = std::hash<Key>,
@@ -45,21 +60,6 @@ namespace deepness
         typedef T mapped_type;
         typedef Hash hasher;
         typedef Pred key_equals;
-
-        class key_error: public std::exception
-        {
-        public:
-            key_error(std::string message = "")
-                :m_message(std::move(message))
-            {}
-
-            const char *what() const throw() override
-            {
-                return m_message.c_str();
-            }
-        private:
-            std::string m_message;
-        };
 
     private:
         struct node_type;
@@ -75,7 +75,7 @@ namespace deepness
                 :population(other.population)
                 ,values(other.values)
             {
-                size_t num_children = popcnt(population);
+                size_t num_children = get_num_children();
                 if(num_children)
                 {
                     children.reset(new shared_node_type[num_children]);
@@ -83,9 +83,20 @@ namespace deepness
                 }
             }
 
+            size_t get_num_children()
+            {
+                return popcnt(population);
+            }
+
             shared_node_type &get_child(size_t child)
             {
                 return children[popcnt(population & ((1 << child) - 1))];
+            }
+
+            bool has_child(uint32_t hash)
+            {
+                assert((hash & ~0x1f) == 0);
+                return (population >> hash) & 1;
             }
 
             // TODO this is just a naive implementation, redo it to optimize
@@ -114,12 +125,24 @@ namespace deepness
         }
 
         /*!
+          Note that this returns a reference to mapped_type. Make sure
+          mapped_type is immutable somehow if you want to make sure
+          the values in the map doesn't change.
           \throws key_error if the map doesn't contain the specified key.
         */
         mapped_type &operator[](const key_type &key) const
         {
             uint32_t hash = static_cast<uint32_t>(hasher()(key));
             return get(key, hash, m_root);
+        }
+
+        /*!
+          \throws key_error if the map doesn't contain the specified key.
+        */
+        immutable_map erase(const key_type &key) const
+        {
+            uint32_t hash = static_cast<uint32_t>(hasher()(key));            
+            return immutable_map(erase(key, hash, 0, m_root));
         }
 
     private:
@@ -151,12 +174,9 @@ namespace deepness
                     {
                         return (*it)->second;
                     }
-                    else
-                    {
-                        // the leaf didn't contain our value
-                        throw key_error();
-                    }
                 }
+                // the leaf didn't contain our value
+                throw key_error();
             }
         }
 
@@ -165,7 +185,7 @@ namespace deepness
             uint32_t partial = hash & 0x1f;
             if(node->population)
             {
-                if((node->population >> partial) & 1)
+                if(node->has_child(partial))
                 {
                     auto newnode = std::make_shared<node_type>(*node);
                     newnode->get_child(partial) = set(std::move(val), hash >> 5, level + 1, node->get_child(partial));
@@ -174,11 +194,11 @@ namespace deepness
                 else
                 {
                     // no node with a matching key, create a new one
-                    size_t num_children = popcnt(node->population);
+                    size_t num_children = node->get_num_children();
                     auto newnode = std::make_shared<node_type>();
                     uint32_t partialbit = 1 << partial;
                     newnode->population = node->population | partialbit;
-                    assert(num_children == popcnt(newnode->population) - 1);
+                    assert(num_children == newnode->get_num_children() - 1);
                     newnode->children.reset(new shared_node_type[num_children + 1]);
                     uint32_t before_popcnt = popcnt(node->population & (partialbit - 1));
                     uint32_t after_popcnt = popcnt(node->population & ~(partialbit | (partialbit - 1)));
@@ -233,6 +253,80 @@ namespace deepness
                     newnode->children[0]->values.push_back(std::make_shared<value_type>(std::move(val)));
                     return std::move(newnode);
                 }
+            }
+        }
+
+        static shared_node_type erase(const key_type &key, uint32_t hash, int level, const shared_node_type &node)
+        {
+            uint32_t partial = hash & 0x1f;
+            if(node->population)
+            {
+                if(node->has_child(partial))
+                {
+                    auto newchild = erase(key, hash >> 5, level + 1, node->get_child(partial));
+                    if(newchild)
+                    {
+                        auto newnode = std::make_shared<node_type>(*node);
+                        newnode->get_child(partial) = newchild;
+                        return std::move(newnode);
+                    }
+                    else
+                    {
+                        uint32_t other_children = node->population & ~(1 << partial);
+                        size_t node_num_children = node->get_num_children();
+                        // if there is only one child, this must be the root node, treat it like a node with more than two children
+                        if(node_num_children == 2)
+                        {
+                            // if there is only one child left after the erase, return it
+                            return node->children[popcnt(node->population & (other_children - 1))];
+                        }
+                        else
+                        {
+                            auto newnode = std::make_shared<node_type>();
+                            newnode->population = other_children;
+                            newnode->children.reset(new shared_node_type[node_num_children - 1]);
+                            for(size_t srcit = 0, dstit = 0; srcit < node_num_children; ++srcit)
+                            {
+                                if(srcit != partial)
+                                {
+                                    newnode->children[dstit] = node->children[srcit];
+                                    ++dstit;
+                                }
+                            }
+                            return std::move(newnode);
+                        }
+                    }
+                }
+                else
+                {
+                    // no node with a matching key, this is an error
+                    throw key_error();
+                }
+            }
+            else
+            {
+                for(size_t i = 0; i < node->values.size(); ++i)
+                {
+                    if(key_equals()(node->values[i]->first, key))
+                    {
+                        // create a new node without the erased value
+                        if(node->values.size() > 1)
+                        {
+                            auto newnode = std::make_shared<node_type>();
+                            newnode->values.reserve(node->values.size() - 1);
+                            for(size_t j = 0; j < node->values.size(); ++j)
+                            {
+                                if(i != j)
+                                    newnode->values.push_back(node->values[j]);
+                            }
+                            return std::move(newnode);
+                        }
+                        // return null if we erased the last value
+                        return shared_node_type();
+                    }
+                }
+
+                throw key_error();
             }
         }
 

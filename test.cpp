@@ -15,6 +15,18 @@ int main(int argc, char *argv[])
     auto intmap3 = intmap2.set(0, 1);
     assert(intmap3[0] == 1);
 
+    intmap3 = intmap2.erase(0);
+    bool exception = false;
+    try
+    {
+        intmap3[0];
+    }
+    catch(key_error &)
+    {
+        exception = true;
+    }
+    assert(exception);
+
     immutable_map<int, int> intmap4;
     for(size_t i = 0; i < 10000; ++i)
     {
