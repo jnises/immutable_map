@@ -1,5 +1,4 @@
 # immutable_map
-
 Note that this library is currently very early in development.
 
 This is an implementation of an immutable map in c++.
@@ -8,7 +7,6 @@ The underlying data-structure is a hash array mapped trie.
 The map currently only supports setting, getting and erasing data.
 
 ## Usage
-
 The library is header only, so you only need to include the hpp file.
 
 ```c++
@@ -29,3 +27,7 @@ catch(deepness::key_error &)
 }
 ```
 
+## TODO
+* Add support for atomic compare and swap.
+* Add iteration support.
+* Optimize.
