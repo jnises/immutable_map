@@ -46,5 +46,5 @@ int main(int argc, char *argv[])
 	intmap5[0] = 4;
 	assert(intmap5[0] == 4);
 
-    std::cout << "tests complete" << std::endl;;
+    std::cout << "tests complete" << std::endl;
 }
