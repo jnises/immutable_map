@@ -31,3 +31,4 @@ catch(deepness::key_error &)
 * Add support for atomic compare and swap.
 * Add iteration support.
 * Optimize.
+* Create controllable hash function for testing.
