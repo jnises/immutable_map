@@ -8,7 +8,7 @@ using namespace deepness;
 int main(int argc, char *argv[])
 {
     std::cout << "immutable_map tests" << std::endl;
-    immutable_map<int, int> intmap;
+    immutable_map<int, const int> intmap;
     auto intmap2 = intmap.set(0, 42);
     assert(intmap2[0] == 42);
 
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     }
     assert(exception);
 
-    immutable_map<int, int> intmap4;
+    immutable_map<int, const int> intmap4;
     for(size_t i = 0; i < 10000; ++i)
     {
         intmap4 = intmap4.set(i, i);
@@ -38,6 +38,13 @@ int main(int argc, char *argv[])
     {
         assert(intmap4[i] == i);
     }
+
+	immutable_map<int, int> intmap5;
+	intmap5 = intmap5.set(0, 0);
+	assert(intmap5[0] == 0);
+	// since we return a non-const reference this is possible
+	intmap5[0] = 4;
+	assert(intmap5[0] == 4);
 
     std::cout << "tests complete" << std::endl;;
 }
