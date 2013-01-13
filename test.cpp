@@ -68,6 +68,30 @@ void test3()
 	assert(intmap[0] == 4);
 }
 
+class testhash
+{
+public:
+    typedef int argument_type;
+    typedef size_t result_type;
+
+    result_type operator()(argument_type arg)
+    {
+        return 0;
+    }
+};
+
+/**
+ * Make sure that the map works with hash collisions.
+ */
+void test4()
+{
+    immutable_map<int, int, testhash> intmap;
+    intmap = intmap.set(0, 0);
+    assert(intmap[0] == 0);
+    intmap = intmap.set(1, 1);
+    assert(intmap[1] == 1);
+}
+
 int main(int argc, char *argv[])
 {
     std::cout << "immutable_map tests" << std::endl;
@@ -76,6 +100,7 @@ int main(int argc, char *argv[])
     test1();
     test2();
     test3();
+    test4();
 
     std::cout << "tests complete" << std::endl;
 }
