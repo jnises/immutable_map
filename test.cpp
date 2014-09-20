@@ -1,10 +1,11 @@
 #include <iostream>
 #include <cassert>
+#include <atomic>
 
 #include "immutable_map.hpp"
 
-using namespace deepness;
-
+namespace deepness
+{
 void test0()
 {
     immutable_map<int, const int> intmap;
@@ -92,8 +93,20 @@ void test4()
     assert(intmap[1] == 1);
 }
 
+void testAtomic()
+{
+	using namespace std;
+	atomic<immutable_map<string, string>> strmap;
+	strmap = strmap.load().set("a", "b");
+	auto nonatomic = strmap.load();
+	auto result = nonatomic["a"];
+	assert(result == "b");
+}
+}
+
 int main(int argc, char *argv[])
 {
+    using namespace deepness;
     std::cout << "immutable_map tests" << std::endl;
 
     test0();
@@ -101,6 +114,7 @@ int main(int argc, char *argv[])
     test2();
     test3();
     test4();
+	//testAtomic();
 
     std::cout << "tests complete" << std::endl;
 }

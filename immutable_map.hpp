@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 Joel Nises
+  Copyright (c) 2014 Joel Nises
 
   Permission is hereby granted, free of charge, to any person
   obtaining a copy of this software and associated documentation files
@@ -21,8 +21,7 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef DEEPNESS_IMMUTABLE_MAP_HPP
-#define DEEPNESS_IMMUTABLE_MAP_HPP
+#pragma once
 
 #include <memory>
 #include <functional>
@@ -141,7 +140,7 @@ namespace deepness
         */
         immutable_map erase(const key_type &key) const
         {
-            uint32_t hash = static_cast<uint32_t>(hasher()(key));            
+            uint32_t hash = static_cast<uint32_t>(hasher()(key));
             return immutable_map(erase(key, hash, 0, m_root));
         }
 
@@ -189,7 +188,7 @@ namespace deepness
                 {
                     auto newnode = std::make_shared<node_type>(*node);
                     newnode->get_child(partial) = set(std::move(val), hash >> 5, level + 1, node->get_child(partial));
-                    return std::move(newnode);
+                    return newnode;
                 }
                 else
                 {
@@ -206,7 +205,7 @@ namespace deepness
                     newnode->children[before_popcnt] = std::make_shared<node_type>();
                     newnode->children[before_popcnt]->values.push_back(std::make_shared<value_type>(std::move(val)));
                     std::copy(node->children.get() + before_popcnt, node->children.get() + num_children, newnode->children.get() + before_popcnt + 1);
-                    return std::move(newnode);
+                    return newnode;
                 }
             }
             else
@@ -220,7 +219,7 @@ namespace deepness
                             // the key already exists in the map, replace it
                             auto newnode = std::make_shared<node_type>(*node);
                             newnode->values[i] = std::make_shared<value_type>(std::move(val));
-                            return std::move(newnode);
+                            return newnode;
                         }
                     }
 
@@ -229,7 +228,7 @@ namespace deepness
                     {
                         auto newnode = std::make_shared<node_type>(*node);
                         newnode->values.push_back(std::make_shared<value_type>(std::move(val)));
-                        return std::move(newnode);
+                        return newnode;
                     }
                     else
                     {
@@ -251,7 +250,7 @@ namespace deepness
                     newnode->children.reset(new shared_node_type[1]);
                     newnode->children[0] = std::make_shared<node_type>();
                     newnode->children[0]->values.push_back(std::make_shared<value_type>(std::move(val)));
-                    return std::move(newnode);
+                    return newnode;
                 }
             }
         }
@@ -268,14 +267,18 @@ namespace deepness
                     {
                         auto newnode = std::make_shared<node_type>(*node);
                         newnode->get_child(partial) = newchild;
-                        return std::move(newnode);
+                        return newnode;
                     }
                     else
                     {
                         uint32_t other_children = node->population & ~(1 << partial);
                         size_t node_num_children = node->get_num_children();
-                        // if there is only one child, this must be the root node, treat it like a node with more than two children
-                        if(node_num_children == 2)
+						if(1 == node_num_children)
+						{
+	                        // if there is only one child, this must be the root node
+							return std::make_shared<node_type>();
+						}
+                        if(2 == node_num_children)
                         {
                             // if there is only one child left after the erase, return it
                             return node->children[popcnt(node->population & (other_children - 1))];
@@ -293,7 +296,7 @@ namespace deepness
                                     ++dstit;
                                 }
                             }
-                            return std::move(newnode);
+                            return newnode;
                         }
                     }
                 }
@@ -319,10 +322,10 @@ namespace deepness
                                 if(i != j)
                                     newnode->values.push_back(node->values[j]);
                             }
-                            return std::move(newnode);
+                            return newnode;
                         }
                         // return null if we erased the last value
-                        return shared_node_type();
+                        return nullptr;
                     }
                 }
 
@@ -341,5 +344,3 @@ namespace deepness
         shared_node_type m_root;
     };
 }
-
-#endif
